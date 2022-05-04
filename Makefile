@@ -1,30 +1,42 @@
 # Makefile for mdns-repeater
 
 
-ZIP_NAME = mdns-repeater-$(HGVERSION)
+ZIP_NAME = mdns-repeater-$(VERSION)
 
 ZIP_FILES = mdns-repeater	\
 			README.txt		\
 			LICENSE.txt
 
-HGVERSION=$(shell hg parents --template "{latesttag}.{latesttagdistance}")
+VERSION=2011-09-21
 
 CFLAGS=-Wall
 
-ifdef DEBUG
-CFLAGS+= -g
+ifeq ($(OS),Windows_NT) 
+    detected_OS := Windows
 else
-CFLAGS+= -Os
-LDFLAGS+= -s
+    detected_OS := $(shell sh -c 'uname 2>/dev/null || echo Unknown')
 endif
 
-CFLAGS+= -DHGVERSION="\"${HGVERSION}\""
+
+ifdef DEBUG
+	CFLAGS+= -g
+else
+	CFLAGS+= -Os
+endif
+
+ifeq ($(detected_OS), Darwin)
+	CFLAGS+= -DSOL_IP=IPPROTO_IP
+else	
+	LDFLAGS+= -s
+endif
+
+CFLAGS+= -DVERSION="\"${VERSION}\""
 
 .PHONY: all clean
 
 all: mdns-repeater
 
-mdns-repeater.o: _hgversion
+mdns-repeater.o: _version
 
 mdns-repeater: mdns-repeater.o
 
@@ -39,12 +51,12 @@ zip: mdns-repeater
 
 # version checking rules
 .PHONY: dummy
-_hgversion: dummy
-	@echo $(HGVERSION) | cmp -s $@ - || echo $(HGVERSION) > $@
+_version: dummy
+	@echo $(VERSION) | cmp -s $@ - || echo $(VERSION) > $@
 
 clean:
 	-$(RM) *.o
-	-$(RM) _hgversion
+	-$(RM) _version
 	-$(RM) mdns-repeater
 	-$(RM) mdns-repeater-*.zip
 
